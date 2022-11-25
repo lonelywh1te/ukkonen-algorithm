@@ -32,7 +32,42 @@ _Берегалов А.С
 Алгоритм Укконена строит суффиксное дерево, добавляя в него по одной букве. Текущая позиция в дереве соответствует максимальному неполному суффиксу уже добавленных букв, который уже встечался где-то раньше.
 
 ## Построение дерева за линейное время
+### Строка без повторений
+Чтобы понять как работает алгоритм, можно расписать его по шагам.   
+Самый простой пример - строка без повторений.
+> abc
+
+Алгоритм работает по шагам, слева направо. Один шаг на каждый символ строки. 
+Каждый шаг может включать в себя больше чем одну индивидуальную операцию.  
+
+Мы начинаем слева и сначала вставляем одиночный символ **a** , создавая ребро из корня к листу и отмечаем его **[0, #]** - это означает что ребро представляет подстроку начинающуюся с позиции 0 и заканчивающуюся на текущем конце. Символ **#** означает индекс за символом (грубо говоря конец символа), то есть на данный момент # = 1;  
+
+На данный момент наше дерево выглядит так: 
+
+![Дерево для строки "a"](/images/img1_1.jpg)
+![Дерево для строки "a"](/images/img1_0.jpg)  
+
+Мы вставили символ **а**, теперь перейдем к следующему символу.  
+**Цель: на каждом шаге вставлять все суффиксы до текущей позиции**  
+Делается это с помощью расширения существующих ребер и добавлении нового ребра.  
+
+Теперь дерево имеет вид:  
+
+![Дерево для строки "a"](/images/img2_1.jpg)
+![Дерево для строки "a"](/images/img2_0.jpg)
+
+>Заметим, что **ab** такое же как и в начальном дереве **[0, #]**, так произошло из-за того что **#** теперь равен **2**.
+
+Достроим дерево, добавив символ **с**:  
+
+![Дерево для строки "a"](/images/img3_1.jpg)
+![Дерево для строки "a"](/images/img3_0.jpg)
+
+Так мы рассмотрели как строится дерево, которое не имеет повторяющихся символов. 
+
+## Строка с повторениями
 В процессе
+
 ## Теория
 ### Правила продления суффиксов
 Пусть _S[j..i]_ = β — суффикс _S[1..i]_. В продолжении j, когда алгоритм находит конец β в текущем дереве, он продолжает β, чтобы обеспечить присутствие суффикса _βS(i + 1)_ в дереве. Алгоритм действует по одному из следующих трех правил.
@@ -83,10 +118,134 @@ __Доказательство__:
 
 Таким образом, при использовании всех приведённых эвристик алгоритм Укконена работает за O(n).
 ## Реализация
-В процессе
+### Cтруктура дерева
+> #### Вершина (node)
+> - `int left, *right` - индекс первого / последнего символа суффикса
+> - `node *suff_link` - суффиксная ссылка
+> - `map<char, *node> childs` - массив детей
+> - `конструктор node`
+
+> `string str` - строка, по которой строится дерево  
+> `node *active_node` - вершина с которой начнется расширение  
+> `int active_edge`  - активное ребро, иначе говоря индекс символа ребра по которому будем спускаться  
+> `int active_length`  - длина которую прошли по ребру  
+> `int remainder`  - остаток суффиксов  
+> `int suff_end` - хранит последний индекс для листьев  
+> `node *root` - корень дерева  
+> `node *last_created` - последняя созданная вершина 
+
+### Конструктор Node
+```c++
+node(int left, int *right, node *suffix_link, int suff_index) {
+this->left = left;
+this->right = right;
+this->suff_link = suffix_link;
+this->suff_index = suff_index;
+}
+```
+### Функция подсчета длины ребра
+```c++
+int suffix_length(node *node) {
+    return *node->right - node->left + 1;
+}
+```
+### Функция построения дерева
+```c++
+void build(string data) {
+    str = data + "$";
+    active_node = root;
+
+    for(int i = 0; i < str.length(); i++){
+        update_tree(i);
+    }
+}
+```
+### Функция расширения дерева
+```c++
+void update_tree(int index){
+    last_created = nullptr;
+    remainder++;
+    suff_end++;
+    
+    while (remainder != 0){
+        // задаем активное ребро
+        if (active_length == 0) {
+            active_edge = index;
+        }
+        // ищем ребенка(суффикс) который начинается на заданный символ
+        auto finded_child = active_node->childs.find(str[active_edge]);
+        node *finded_node = finded_child->second;
+        
+        // если нет такого суффикса который начинается на данный символ
+        if (finded_child == active_node->childs.end()){
+            node *added_letter = new node(index, &suff_end, root, index - remainder + 1);
+            active_node->childs.insert(make_pair(str[index], added_letter));
+            if (last_created != nullptr) {
+                last_created->suff_link = active_node;
+                last_created = nullptr;
+            }
+        }
+        else {
+            // если можем спуститься к ноде - спускаемся
+            if (active_length == suffix_length(finded_node)){
+                   active_node = finded_node;
+                   active_length = 0;
+                   active_edge = -1;
+                   continue;
+            }
+            //если можем спуститься по ребру - спускаемся
+            if (str[index] == str[finded_child->second->left + active_length]){
+                if (last_created != nullptr && active_node != root) last_created->suff_link = active_node;
+                active_length++;
+                break;
+            }
+            // деление ребра
+            node *new_node = new node(finded_node->left, new int(finded_node->left + active_length - 1), root, -1);
+            // создаем суффиксную ссылку
+            if (last_created != nullptr) last_created->suff_link = new_node;
+            active_node->childs[str[active_edge]] = new_node;
+            finded_node->left += active_length;
+            new_node->childs.insert(make_pair(str[index], new node(index, &suff_end, root, index - remainder + 1)));
+            new_node->childs.insert(make_pair(str[finded_node->left], finded_node));
+            last_created = new_node;
+        }
+        remainder--;
+        
+        if (active_length > 0 && active_node == root){
+            active_length--;
+            active_edge++;
+        }
+        else if (active_node != root){
+            active_node = active_node->suff_link;
+        }
+    }
+}
+```
+### Вывод дерева
+```c++
+void print(node *start, int lvl) {
+    // перебор нод
+    for(auto i : start->childs){
+        for(int k = 0; k < lvl; k++){
+            cout << "-----";
+        }
+        // вывод суффикса
+        for(int j = i.second->left; j <= *(i.second->right); j++){
+            cout << str[j];
+        }
+        cout << endl;
+        // спуск по детям
+        if(!(start->childs.empty())){
+            print(i.second, lvl+1);
+        }
+    }
+}
+```
 ## Источники  
 - [Простое суффиксное дерево / Хабр](https://habr.com/ru/post/258121/)
 - [Алгоритм Укконена — Викиконспекты](https://vk.cc/cj1OgK)
+- [АиСД S03E12. Суффиксное дерево. Алгоритм Укконена](https://www.youtube.com/watch?v=WjzR1eFbAeo&t=1328s&ab_channel=PavelMavrin)
 - [Visualization of Ukkonen's Algorithm](http://brenden.github.io/ukkonen-animation/)
 - [Ukkonen's suffix tree algorithm in plain English / stackoverflow](https://stackoverflow.com/questions/9452701/ukkonens-suffix-tree-algorithm-in-plain-english/9513423#9513423)
 - [Suffix tree. Ukkonen's algorithm - Codeforces](https://codeforces.com/blog/entry/16780?f0a28=1)
+
