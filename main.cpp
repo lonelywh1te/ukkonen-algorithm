@@ -120,7 +120,7 @@ struct suffix_tree {
 
 int main(){
     suffix_tree a;
-    a.build("abcabxabz");
+    a.build("abc");
     a.print(a.root, 0);
     cout << endl;
 }
