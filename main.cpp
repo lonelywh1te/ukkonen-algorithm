@@ -1,4 +1,6 @@
 #include <iostream>
+#include <fstream>
+#include <sstream>
 #include <map>
 using namespace std;
 
@@ -102,9 +104,9 @@ struct suffix_tree {
     void print(node *start, int lvl) {
         // перебор нод
         for(auto i : start->childs){
-            for(int k = 0; k < lvl; k++){
-                cout << "-----";
-            }
+//            for(int k = 0; k < lvl; k++){
+//                cout << "-----";
+//            }
             // вывод суффикса
             for(int j = i.second->left; j <= *(i.second->right); j++){
                 cout << str[j];
@@ -119,8 +121,5 @@ struct suffix_tree {
 };
 
 int main(){
-    suffix_tree a;
-    a.build("abc");
-    a.print(a.root, 0);
-    cout << endl;
+
 }
