@@ -1,6 +1,9 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <cstdlib>
+#include <chrono>
+#include "windows.h"
 #include <map>
 using namespace std;
 
@@ -42,6 +45,14 @@ struct suffix_tree {
         }
     }
 
+    void del(node *node){
+        for(auto i : node->childs){
+            del(i.second);
+        }
+        if (node->suff_index == -1) delete node->right;
+        delete node;
+    }
+
     void update_tree(int index){
         last_created = nullptr;
         remainder++;
@@ -67,10 +78,10 @@ struct suffix_tree {
             }
             else {
                 // если можем спуститься к ноде - спускаемся
-                if (active_length == suffix_length(finded_node)){
+                if (active_length >= suffix_length(finded_node)){
                     active_node = finded_node;
-                    active_length = 0;
-                    active_edge = -1;
+                    active_length -= suffix_length(finded_node);
+                    active_edge += suffix_length(finded_node);
                     continue;
                 }
                 //если можем спуститься по ребру - спускаемся
@@ -104,9 +115,9 @@ struct suffix_tree {
     void print(node *start, int lvl) {
         // перебор нод
         for(auto i : start->childs){
-//            for(int k = 0; k < lvl; k++){
-//                cout << "-----";
-//            }
+            for(int k = 0; k < lvl; k++){
+                cout << "-----";
+            }
             // вывод суффикса
             for(int j = i.second->left; j <= *(i.second->right); j++){
                 cout << str[j];
@@ -118,8 +129,96 @@ struct suffix_tree {
             }
         }
     }
+
+    bool find(string text){
+        node *current_node = root;
+        string finded_str = "";
+        int depth_edge = 0;
+        int total_depth = 0;
+
+        // ищем ребро
+        auto finded_edge = current_node->childs.find(text[0]);
+        node *finded_node = finded_edge->second;
+
+        while (text != finded_str){
+            //если не находим
+            if (finded_edge == current_node->childs.end()){
+                return false;
+            }
+            //если нашли - спускаемся
+            while (depth_edge <= suffix_length(finded_node)){
+                if (finded_str == text) {
+                    return true;
+                }
+                if (depth_edge != suffix_length(finded_node)) {
+                    finded_str += str[finded_node->left + depth_edge];
+                    depth_edge++;
+                    continue;
+                }
+                break;
+            }
+            // спустились к концу ребра, смена вершины
+            current_node = finded_node;
+            total_depth += depth_edge;
+            depth_edge = 0;
+            finded_edge = current_node->childs.find(text[total_depth]);
+            finded_node = finded_edge->second;
+        }
+    }
 };
 
-int main(){
+void generate_tests(int number_of_tests, unsigned long long int max_length){
+    srand(time(nullptr));
+    string alphabet = "abcdefghijklmnopqrstuvwxyz";
+    for (int i = 1; i <= number_of_tests; i++){
+        suffix_tree tree;
+        string test_string = "";
+        string test_substr;
+        int start, length;
 
+        for (int k = 0; k < rand() % max_length + 1; k++){
+            test_string += alphabet[rand() % 26];
+        }
+
+        start = rand() % test_string.length();
+        length = ((rand() % test_string.length()) + 1) - start;
+
+        test_substr = test_string.substr(start, length);
+        tree.build(test_string);
+        if (tree.find(test_substr)) {
+            cout << "[ TEST #" << i << " ]: OK" << endl;
+            cout << "TESTING_STRING: " << test_string << endl;
+            cout << "TESTING_SUBSTR: " << test_substr << endl;
+        }
+        else {
+            cout << "[ TEST #" << i << " ]: FAIL" << endl;
+            cout << "TESTING_STRING: " << test_string << endl;
+            cout << "TESTING_SUBSTR: " << test_substr << endl;
+            return;
+        }
+        tree.del(tree.root);
+    }
+}
+
+void analyze_time(int count_runs){
+    srand(time(nullptr));
+    for(int i = 0; i < count_runs; i++){
+        suffix_tree a;
+        string test_string = "";
+        string alphabet = "abcdefghijklmnopqrstuvwxyz";
+        for (int k = 0; k < i; k++){
+            test_string += alphabet[rand() % 26];
+        }
+
+        auto start = chrono::steady_clock::now();
+        a.build(test_string);
+        auto end = chrono::steady_clock::now();
+        auto time = chrono::duration_cast<chrono::microseconds>(end - start).count();
+        cout << i << "            " << time << endl;
+        a.del(a.root);
+    }
+}
+
+int main(){
+    generate_tests(10, 1000);
 }
