@@ -2,9 +2,12 @@
 #define MAIN_CPP_SUFFIX_TREE_H
 #include <iostream>
 #include <map>
+#include "analyze_time.h"
+
 using namespace std;
 
 struct suffix_tree {
+private:
     struct node {
         int left, *right, suff_index;
         node *suff_link;
@@ -26,14 +29,15 @@ struct suffix_tree {
     int remainder = 0;
     int suff_end = -1;
 
-    node *root = new node(-1, nullptr, nullptr, -1);
     node *last_created = nullptr;
-
-    int suffix_length(node *node);
-    void build(string data);
     void del(node *node);
     void update_tree(int index);
+    int suffix_length(node *node);
+
+public:
+    node *root = new node(-1, nullptr, nullptr, -1);
+    void build(string data);
     void print(node *start, int lvl);
-    bool find(string text);
+    int find(string text);
 };
 #endif

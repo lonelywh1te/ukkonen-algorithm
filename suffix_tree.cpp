@@ -6,12 +6,13 @@ int suffix_tree::suffix_length(node *node){
 
 void suffix_tree::build(string data) {
     if (!root->childs.empty()) del(root);
-    str = data + "$";
+    str = data;
     active_node = root;
 
-    for(int i = 0; i < str.length(); i++){
+    for(int i = 0; str[i] != '\0'; i++){
         update_tree(i);
     }
+    update_tree(str.length());
 }
 
 void suffix_tree::del(node *node){
@@ -23,6 +24,7 @@ void suffix_tree::del(node *node){
 }
 
 void suffix_tree::update_tree(int index) {
+
     last_created = nullptr;
     remainder++;
     suff_end++;
@@ -59,7 +61,7 @@ void suffix_tree::update_tree(int index) {
                 break;
             }
             // деление ребра
-            node *new_node = new node(finded_node->left, new int(finded_node->left + active_length - 1), root, -1);
+            node *new_node = new node(finded_node->left, new int(finded_node->left + active_length - 1), root, index - remainder + 1);
             // создаем суффиксную ссылку
             if (last_created != nullptr) last_created->suff_link = new_node;
             active_node->childs[str[active_edge]] = new_node;
@@ -82,8 +84,9 @@ void suffix_tree::update_tree(int index) {
 void suffix_tree::print(node *start, int lvl) {
     // перебор нод
     for(auto i : start->childs){
+        if (i.first == '\0') continue;
         for(int k = 0; k < lvl; k++){
-            cout << "-----";
+            cout << "---";
         }
         // вывод суффикса
         for(int j = i.second->left; j <= *(i.second->right); j++){
@@ -97,9 +100,11 @@ void suffix_tree::print(node *start, int lvl) {
     }
 }
 
-bool suffix_tree::find(string text){
+int suffix_tree::find(string text){
+    if (text.empty() || root->childs.empty()) return -1;
+
     node *current_node = root;
-    string finded_str = "";
+    string finded_str;
     int depth_edge = 0;
     int total_depth = 0;
 
@@ -110,12 +115,12 @@ bool suffix_tree::find(string text){
     while (text != finded_str){
         //если не находим
         if (finded_edge == current_node->childs.end()){
-            return false;
+            return -1;
         }
         //если нашли - спускаемся
         while (depth_edge <= suffix_length(finded_node)){
             if (finded_str == text) {
-                return true;
+                return finded_node->suff_index;
             }
             if (depth_edge != suffix_length(finded_node)) {
                 finded_str += str[finded_node->left + depth_edge];
