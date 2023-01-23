@@ -2,6 +2,7 @@
 #define MAIN_CPP_SUFFIX_TREE_H
 #include <iostream>
 #include <map>
+#include "tests.h"
 #include "analyze_time.h"
 
 using namespace std;
