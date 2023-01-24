@@ -7,6 +7,6 @@
 #include "suffix_tree.h"
 using namespace std;
 
-void analyze_time(int count_of_runs, unsigned int seed = 0);
+void analyze_time(string function, int count_of_runs, unsigned int seed = 0);
 
 #endif
