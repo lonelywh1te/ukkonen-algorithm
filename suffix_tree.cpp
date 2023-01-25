@@ -1,5 +1,5 @@
 #include "suffix_tree.h"
-
+#include <string>
 int suffix_tree::suffix_length(node *node){
     return *node->right - node->left + 1;
 }
@@ -37,7 +37,6 @@ void suffix_tree::update_tree(int index) {
         // ищем ребенка(суффикс) который начинается на заданный символ
         auto finded_child = active_node->childs.find(str[active_edge]);
         node *finded_node = finded_child->second;
-
         // если нет такого суффикса который начинается на данный символ
         if (finded_child == active_node->childs.end()) {
             node *added_letter = new node(index, &suff_end, root, index - remainder + 1);
@@ -100,41 +99,25 @@ void suffix_tree::print(node *start, int lvl) {
     }
 }
 
-int suffix_tree::find(string text){
-    if (text.empty() || root->childs.empty()) return -1;
-
+int suffix_tree::find(string text) {
     node *current_node = root;
-    string finded_str;
-    int depth_edge = 0;
-    int total_depth = 0;
+    int depth = 0;
+    unsigned long long text_length = text.length();
 
-    // ищем ребро
-    auto finded_edge = current_node->childs.find(text[0]);
-    node *finded_node = finded_edge->second;
+    while (depth < text.length()){
+        auto finded_child = current_node->childs.find(text[depth]);
+        if (finded_child == current_node->childs.end()) return -1;
+        node *finded_node = finded_child->second;
+        int node_length = suffix_length(finded_node);
 
-    while (text != finded_str){
-        //если не находим
-        if (finded_edge == current_node->childs.end()){
-            return -1;
+        for(int i = 0; i < node_length; i++){
+            if (depth + i >= text_length) return finded_node->suff_index;
+            if (text[depth + i] != str[finded_node->left + i]) return -1;
         }
-        //если нашли - спускаемся
-        while (depth_edge <= suffix_length(finded_node)){
-            if (finded_str == text) {
-                return finded_node->suff_index;
-            }
-            if (depth_edge != suffix_length(finded_node)) {
-                finded_str += str[finded_node->left + depth_edge];
-                depth_edge++;
-                continue;
-            }
-            break;
-        }
-        // спустились к концу ребра, смена вершины
+
         current_node = finded_node;
-        total_depth += depth_edge;
-        depth_edge = 0;
-        finded_edge = current_node->childs.find(text[total_depth]);
-        finded_node = finded_edge->second;
+        depth += node_length;
     }
+    return current_node->suff_index;
 }
 

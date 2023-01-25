@@ -44,18 +44,12 @@ void analyze_time(string function, int count_of_runs, unsigned int rand_seed){
             for (int k = 0; k < i; k++){
                 test_string += alphabet[letter(random)];
             }
-
+            a.build(test_string);
             rand_substring = test_string.substr(min(rand, i - rand), max(rand, i - rand*2));
             auto start_ukk = chrono::steady_clock::now();
             a.find(rand_substring);
             auto end_ukk = chrono::steady_clock::now();
             auto time_ukk = chrono::duration_cast<chrono::nanoseconds>(end_ukk - start_ukk).count();
-
-//            auto start_cpp = chrono::steady_clock::now();
-//            test_string.find(rand_substring);
-//            auto end_cpp = chrono::steady_clock::now();
-//            auto time_cpp = chrono::duration_cast<chrono::nanoseconds>(end_cpp - start_cpp).count();
-
             cout << i << " " << time_ukk << endl;
         }
     }
