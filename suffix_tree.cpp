@@ -1,6 +1,7 @@
 #include "suffix_tree.h"
-#include <string>
+
 int suffix_tree::suffix_length(node *node){
+    if (node == root) return 0;
     return *node->right - node->left + 1;
 }
 
@@ -36,7 +37,7 @@ void suffix_tree::update_tree(int index) {
         }
         // ищем ребенка(суффикс) который начинается на заданный символ
         auto finded_child = active_node->childs.find(str[active_edge]);
-        node *finded_node = finded_child->second;
+
         // если нет такого суффикса который начинается на данный символ
         if (finded_child == active_node->childs.end()) {
             node *added_letter = new node(index, &suff_end, root, index - remainder + 1);
@@ -46,6 +47,7 @@ void suffix_tree::update_tree(int index) {
                 last_created = nullptr;
             }
         } else {
+            node *finded_node = finded_child->second;
             // если можем спуститься к ноде - спускаемся
             if (active_length >= suffix_length(finded_node)) {
                 active_node = finded_node;
@@ -100,9 +102,11 @@ void suffix_tree::print(node *start, int lvl) {
 }
 
 int suffix_tree::find(string text) {
+    if (text.empty()) return 0;
+
     node *current_node = root;
     int depth = 0;
-    unsigned long long text_length = text.length();
+    int text_length = text.length();
 
     while (depth < text.length()){
         auto finded_child = current_node->childs.find(text[depth]);

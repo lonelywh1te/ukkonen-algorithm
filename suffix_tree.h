@@ -1,7 +1,7 @@
 #ifndef MAIN_CPP_SUFFIX_TREE_H
 #define MAIN_CPP_SUFFIX_TREE_H
 #include <iostream>
-#include <map>
+#include <unordered_map>
 #include "tests.h"
 #include "analyze_time.h"
 
@@ -12,7 +12,7 @@ private:
     struct node {
         int left, *right, suff_index;
         node *suff_link;
-        map<char, node*> childs;
+        unordered_map<char, node*> childs;
 
         node(int left, int *right, node *suffix_link, int suff_index) {
             this->left = left;
@@ -34,7 +34,6 @@ private:
     void del(node *node);
     void update_tree(int index);
     int suffix_length(node *node);
-
 public:
     node *root = new node(-1, nullptr, nullptr, -1);
     void build(string data);
