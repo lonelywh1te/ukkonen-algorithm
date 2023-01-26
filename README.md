@@ -248,135 +248,68 @@ __Доказательство__:
 Сначала неявно продлятся все листовые суффиксы, а потом по правилу 2 будет создано несколько новых внутренних вершин. Так как вершин не может быть создано больше, чем их есть, то амортизационно на каждой фазе будет создано O(1) вершин. Так как мы на каждой фазе начинаем добавление суффикса не с корня, а с индекса j∗, на котором в прошлой фазе было применено правило 3, то используя немного модифицированный вариант леммы о числе переходов внутри фазы нетрудно показать, что суммарное число переходов по рёбрам за все n фаз равно O(n).
 
 Таким образом, при использовании всех приведённых эвристик алгоритм Укконена работает за O(n).
-## Реализация
-### Cтруктура дерева
-> #### Вершина (node)
-> - `int left, *right` - индекс первого / последнего символа суффикса
-> - `node *suff_link` - суффиксная ссылка
-> - `map<char, *node> childs` - массив детей
-> - `конструктор node`
+## Тестирование
+Тестирование запускается функцией __test_tree()__;
+### Входные данные
+Формат входных данных:  
+На вход подается файл - номер_теста
+> Строка S (пример: "abcxab")  
+> Подстрока строки S (пример: "xab")  
+> Вхождение подстроки в строку S (пример: 3)  
 
-> `string str` - строка, по которой строится дерево  
-> `node *active_node` - вершина с которой начнется расширение  
-> `int active_edge`  - активное ребро, иначе говоря индекс символа ребра по которому будем спускаться  
-> `int active_length`  - длина которую прошли по ребру  
-> `int remainder`  - остаток суффиксов  
-> `int suff_end` - хранит последний индекс для листьев  
-> `node *root` - корень дерева  
-> `node *last_created` - последняя созданная вершина 
+Формат выходных данных:
+На выходе создается файл - result   
 
-### Конструктор Node
-```c++
-node(int left, int *right, node *suffix_link, int suff_index) {
-this->left = left;
-this->right = right;
-this->suff_link = suffix_link;
-this->suff_index = suff_index;
-}
-```
-### Функция подсчета длины ребра
-```c++
-int suffix_length(node *node) {
-    return *node->right - node->left + 1;
-}
-```
-### Функция построения дерева
-```c++
-void build(string data) {
-    str = data + "$";
-    active_node = root;
+Тестирование считается успешным, если все тесты были пройдены.
+> test #1 - ok  
+> test #2 - ok  
+> test #3 - ok  
+> ...  
+> test #12 - ok  
+> 
+> GENERATED TESTS   
+> seed: *random_seed*  
+> 
+> test #1 - ok  
+> test #2 - ok  
+> test #3 - ok  
+> ...  
+> test #100 - ok
 
-    for(int i = 0; i < str.length(); i++){
-        update_tree(i);
-    }
-}
-```
-### Функция расширения дерева
-```c++
-void update_tree(int index){
-    last_created = nullptr;
-    remainder++;
-    suff_end++;
-    
-    while (remainder != 0){
-        // задаем активное ребро
-        if (active_length == 0) {
-            active_edge = index;
-        }
-        // ищем ребенка(суффикс) который начинается на заданный символ
-        auto finded_child = active_node->childs.find(str[active_edge]);
-        node *finded_node = finded_child->second;
-        
-        // если нет такого суффикса который начинается на данный символ
-        if (finded_child == active_node->childs.end()){
-            node *added_letter = new node(index, &suff_end, root, index - remainder + 1);
-            active_node->childs.insert(make_pair(str[index], added_letter));
-            if (last_created != nullptr) {
-                last_created->suff_link = active_node;
-                last_created = nullptr;
-            }
-        }
-        else {
-            // если можем спуститься к ноде - спускаемся
-            if (active_length == suffix_length(finded_node)){
-                   active_node = finded_node;
-                   active_length = 0;
-                   active_edge = -1;
-                   continue;
-            }
-            //если можем спуститься по ребру - спускаемся
-            if (str[index] == str[finded_child->second->left + active_length]){
-                if (last_created != nullptr && active_node != root) last_created->suff_link = active_node;
-                active_length++;
-                break;
-            }
-            // деление ребра
-            node *new_node = new node(finded_node->left, new int(finded_node->left + active_length - 1), root, -1);
-            // создаем суффиксную ссылку
-            if (last_created != nullptr) last_created->suff_link = new_node;
-            active_node->childs[str[active_edge]] = new_node;
-            finded_node->left += active_length;
-            new_node->childs.insert(make_pair(str[index], new node(index, &suff_end, root, index - remainder + 1)));
-            new_node->childs.insert(make_pair(str[finded_node->left], finded_node));
-            last_created = new_node;
-        }
-        remainder--;
-        
-        if (active_length > 0 && active_node == root){
-            active_length--;
-            active_edge++;
-        }
-        else if (active_node != root){
-            active_node = active_node->suff_link;
-        }
-    }
-}
-```
-### Вывод дерева
-```c++
-void print(node *start, int lvl) {
-    // перебор нод
-    for(auto i : start->childs){
-        for(int k = 0; k < lvl; k++){
-            cout << "-----";
-        }
-        // вывод суффикса
-        for(int j = i.second->left; j <= *(i.second->right); j++){
-            cout << str[j];
-        }
-        cout << endl;
-        // спуск по детям
-        if(!(start->childs.empty())){
-            print(i.second, lvl+1);
-        }
-    }
-}
-```
+Если тест был провален, дополнительно выводится строка, подстрока, ответ и вывод программы.
+> test #1 - ok  
+> test #2 - ok  
+> ...  
+> test #x - failed  
+> ㅤㅤstr: abcxab   
+> ㅤㅤsubstr: xab  
+> ㅤㅤanswer: 3  
+> ㅤㅤoutput: 2
+
+В таком случае тестирование прекращается, программа завершается с ошибкой -1;
+## Анализ производительности
+### Функция построения дерева  
+Замеры производились для строк длиной до 5000 символов.  
+
+![Дерево для строки "abca"](/images/img5_0.jpg)  
+
+
 ## Источники  
 - [Простое суффиксное дерево / Хабр](https://habr.com/ru/post/258121/)
 - [Алгоритм Укконена — Викиконспекты](https://vk.cc/cj1OgK)
 - [АиСД S03E12. Суффиксное дерево. Алгоритм Укконена](https://www.youtube.com/watch?v=WjzR1eFbAeo&t=1328s&ab_channel=PavelMavrin)
 - [Visualization of Ukkonen's Algorithm](http://brenden.github.io/ukkonen-animation/)
 - [Ukkonen's suffix tree algorithm in plain English / stackoverflow](https://stackoverflow.com/questions/9452701/ukkonens-suffix-tree-algorithm-in-plain-english/9513423#9513423)
-- [Suffix tree. Ukkonen's algorithm - Codeforces](https://codeforces.com/blog/entry/16780?f0a28=1)
+- [Ukkonen's algorithm - Wikipedia](https://en.wikipedia.org/wiki/Ukkonen%27s_algorithm)
+- [Suffix Tree Application 1 - Substring Check - GeeksforGeeks](https://www.geeksforgeeks.org/suffix-tree-application-1-substring-check/)
+- [Linear Time Construction of Suffix Trees with Ukkonen's Algorithm](https://www.youtube.com/watch?v=OT5CigmVfh0&ab_channel=%E8%9C%BB%E8%9B%89)
+- [Suffix Tree-Ukkonen's Algorithm - Coding Ninjas CodeStudio](https://www.codingninjas.com/codestudio/library/suffix-tree-ukkonens-algorithm)
+- [Chapter on suffix trees - CMU School of Computer Science](https://www.cs.cmu.edu/afs/cs/project/pscico-guyb/realworld/www/slidesF06/cmuonly/gusfield.pdf)
+- [A&DS S03E13. Suffix Tree. Ukkonen's Algorithm](https://www.youtube.com/watch?v=C10HoshM_DA&ab_channel=PavelMavrin)
+- [Suffix Tree using Ukkonen's algorithm](https://www.youtube.com/watch?v=aPRqocoBsFQ&ab_channel=TusharRoy-CodingMadeSimple)
+- [Суффиксные деревья, алгоритм Укконена. Сжатие данных](https://users.math-cs.spbu.ru/~okhotin/teaching/tcs2_2019/okhotin_tcs2alg_2019_l3.pdf)
+- [Обобщенные аннотированные суффиксные деревья](https://www.hse.ru/data/2013/02/17/1308149995/%D0%9E%D0%B1%D0%BE%D0%B1%D1%89%D0%B5%D0%BD%D0%BD%D1%8B%D0%B5%20%D0%90%D0%BD%D0%BD%D0%BE%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%BD%D1%8B%D0%B5%20%D0%A1%D1%83%D1%84%D1%84%D0%B8%D0%BA%D1%81%D0%BD%D1%8B%D0%B5%20%D0%94%D0%B5%D1%80..%D0%BE%D0%B1%D0%B5%D0%BD%D0%BD%D0%BE%D1%81%D1%82%D0%B8%20%D1%80%D0%B5%D0%B0%D0%BB%D0%B8%D0%B7%D0%B0%D1%86%D0%B8%D0%B8%20%28%D0%94%D1%83%D0%B1%D0%BE%D0%B2%20%D0%9C.%29.pdf)
+- [Алгоритм Укконена на пальцах](http://www.proteus2001.narod.ru/gen/txt/10/ukk.html)
+- [Алгоритм Укконена - frwiki.wiki](https://ru.frwiki.wiki/wiki/Algorithme_d%27Ukkonen)
+- [Суффиксное дерево - Википедия](https://ru.wikipedia.org/wiki/%D0%A1%D1%83%D1%84%D1%84%D0%B8%D0%BA%D1%81%D0%BD%D0%BE%D0%B5_%D0%B4%D0%B5%D1%80%D0%B5%D0%B2%D0%BE)
 
